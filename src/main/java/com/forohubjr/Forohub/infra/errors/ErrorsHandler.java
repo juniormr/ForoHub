@@ -21,6 +21,10 @@ public class ErrorsHandler {
         var errors = e.getFieldErrors().stream().map(ValidationErrorData::new).toList();
         return ResponseEntity.badRequest().body(errors);
     }
+    @ExceptionHandler(IntegrityValidation.class)
+    public ResponseEntity errorHandlerIntegrityValidation(Exception e){
+        return ResponseEntity.badRequest().body(e.getMessage());
+    }
 
     private record ValidationErrorData(String field, String error){
         public ValidationErrorData(FieldError error) {
