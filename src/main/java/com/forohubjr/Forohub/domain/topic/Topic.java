@@ -21,6 +21,7 @@ public class Topic {
     private Long Id;
     private String title;
     private String message;
+    private String status;
     private String course;
     private String creation;
 
@@ -42,6 +43,12 @@ public class Topic {
         }
         if(updateTopicData.message() != null){
             this.message = updateTopicData.message();
+        }
+        if(updateTopicData.status() != null){
+            this.status = updateTopicData.status();
+        }
+        if(updateTopicData.course() != null){
+            this.course = updateTopicData.course();
         }
     }
 

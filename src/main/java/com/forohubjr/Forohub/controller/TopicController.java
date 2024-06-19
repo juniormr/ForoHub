@@ -4,7 +4,6 @@ import com.forohubjr.Forohub.domain.topic.*;
 import com.forohubjr.Forohub.domain.user.User;
 import com.forohubjr.Forohub.domain.user.UserRepository;
 import com.forohubjr.Forohub.infra.errors.IntegrityValidation;
-import jakarta.annotation.Resource;
 import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,7 +19,6 @@ import org.springframework.web.util.UriComponentsBuilder;
 import java.net.URI;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -52,16 +50,16 @@ public class TopicController {
                 .filter(t -> t.getTitle().equals(saveTopicData.title()))
                 .filter(t -> t.getMessage().equals(saveTopicData.message()))
                 .findAny();
-        if(titleExist.isPresent()){
+        if (titleExist.isPresent()) {
             throw new IntegrityValidation("This topic and message already exist");
-        }
-        else {
+        } else {
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm dd-MM-yyyy");
             LocalDateTime dateTime = LocalDateTime.now();
             String formattedDateTime = dateTime.format(formatter);
 
             Topic newTopic = new Topic(saveTopicData);
             newTopic.setCreation(formattedDateTime);
+            newTopic.setStatus("active");
 
             List<Topic> newTopics = actualUser.getTopics();
             newTopics.add(newTopic);
@@ -70,7 +68,7 @@ public class TopicController {
             userRepository.save(actualUser);
             Long actualId = actualUser.getTopics().stream().filter(t -> t.getTitle().equals(newTopic.getTitle())).findFirst().get().getId();
 
-            AnswerTopicData answerTopicData = new AnswerTopicData(actualId, newTopic.getTitle(), newTopic.getMessage(), newTopic.getCourse());
+            AnswerTopicData answerTopicData = new AnswerTopicData(actualId, newTopic.getTitle(), newTopic.getMessage(), newTopic.getStatus(), newTopic.getCourse());
 
             URI url = uriComponentsBuilder.path("/topics/{id}").buildAndExpand(actualId).toUri();
 
@@ -88,22 +86,25 @@ public class TopicController {
     @GetMapping("/{id}")
     public ResponseEntity<AnswerTopicData> getTopicData(@PathVariable Long id) {
         Topic topic = topicRepository.getReferenceById(id);
-        var topicData = new AnswerTopicData(topic.getId(), topic.getTitle(), topic.getMessage(),
-                topic.getCourse());
-        return ResponseEntity.ok(topicData);
+        if (topicRepository.existsById(id)) {
+            var topicData = new AnswerTopicData(topic.getId(), topic.getTitle(), topic.getMessage(), topic.getStatus(), topic.getCourse());
+            return ResponseEntity.ok(topicData);
+        } else {
+            throw new IntegrityValidation("Topic with this Id doesn't exist");
+        }
+
     }
 
     @PutMapping("/{id}")
     @Transactional
-    public ResponseEntity<?> updateTopic(@PathVariable Long id, @RequestBody @Valid UpdateTopicData updateTopicData) {
+    public ResponseEntity<AnswerTopicData> updateTopic(@PathVariable Long id, @RequestBody @Valid UpdateTopicData updateTopicData) {
         if (topicRepository.existsById(id)) {
             Topic topic = topicRepository.getReferenceById(id);
             topic.updateTopic(updateTopicData);
-            AnswerTopicData answerTopicData = new AnswerTopicData(topic.getId(), topic.getTitle(), topic.getMessage(), topic.getCourse());
-
+            AnswerTopicData answerTopicData = new AnswerTopicData(topic.getId(), topic.getTitle(), topic.getMessage(), topic.getStatus(), topic.getCourse());
             return ResponseEntity.ok(answerTopicData);
         } else {
-            return ResponseEntity.badRequest().body("Id doesn't exist");
+            throw new IntegrityValidation("Topic with this Id doesn't exist");
         }
 
     }
@@ -116,7 +117,7 @@ public class TopicController {
             topicRepository.deleteTopic(id);
             return ResponseEntity.ok().build();
         } else {
-            return ResponseEntity.badRequest().body("Id doesn't exist");
+            throw new IntegrityValidation("Topic with this Id doesn't exist");
         }
 
     }

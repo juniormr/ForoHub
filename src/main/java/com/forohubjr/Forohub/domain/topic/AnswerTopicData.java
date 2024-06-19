@@ -5,6 +5,7 @@ public record AnswerTopicData(
         Long Id,
         String title,
         String message,
+        String status,
         String course
 
 ) {
