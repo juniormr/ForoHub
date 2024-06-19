@@ -1,8 +1,6 @@
 package com.forohubjr.Forohub.controller;
 
 import com.forohubjr.Forohub.domain.topic.*;
-import com.forohubjr.Forohub.domain.user.User;
-import com.forohubjr.Forohub.domain.user.UserRepository;
 import com.forohubjr.Forohub.infra.errors.IntegrityValidation;
 import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
@@ -12,15 +10,12 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.data.web.config.EnableSpringDataWebSupport;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.net.URI;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
-import java.util.Optional;
+
 
 import static org.springframework.data.web.config.EnableSpringDataWebSupport.PageSerializationMode.VIA_DTO;
 
@@ -29,8 +24,9 @@ import static org.springframework.data.web.config.EnableSpringDataWebSupport.Pag
 public class TopicController {
     @Autowired
     private TopicRepository topicRepository;
+
     @Autowired
-    private UserRepository userRepository;
+    private CreateTopicService createService;
 
     private List<Topic> topics;
 
@@ -42,40 +38,10 @@ public class TopicController {
     @PostMapping
     @Transactional
     public ResponseEntity<AnswerTopicData> saveTopic(@RequestBody @Valid SaveTopicData saveTopicData,
-                                                     UriComponentsBuilder uriComponentsBuilder) {
-
-        User authUser = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        User actualUser = userRepository.getReferenceById(authUser.getId());
-        Optional<Topic> titleExist = topicRepository.findAll().stream()
-                .filter(t -> t.getTitle().equals(saveTopicData.title()))
-                .filter(t -> t.getMessage().equals(saveTopicData.message()))
-                .findAny();
-        if (titleExist.isPresent()) {
-            throw new IntegrityValidation("This topic and message already exist");
-        } else {
-            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm dd-MM-yyyy");
-            LocalDateTime dateTime = LocalDateTime.now();
-            String formattedDateTime = dateTime.format(formatter);
-
-            Topic newTopic = new Topic(saveTopicData);
-            newTopic.setCreation(formattedDateTime);
-            newTopic.setStatus("active");
-
-            List<Topic> newTopics = actualUser.getTopics();
-            newTopics.add(newTopic);
-            actualUser.setTopics(newTopics);
-
-            userRepository.save(actualUser);
-            Long actualId = actualUser.getTopics().stream().filter(t -> t.getTitle().equals(newTopic.getTitle())).findFirst().get().getId();
-
-            AnswerTopicData answerTopicData = new AnswerTopicData(actualId, newTopic.getTitle(), newTopic.getMessage(), newTopic.getStatus(), newTopic.getCourse());
-
-            URI url = uriComponentsBuilder.path("/topics/{id}").buildAndExpand(actualId).toUri();
-
-            return ResponseEntity.ok().body(answerTopicData);
-
-        }
-
+                                                     UriComponentsBuilder uriComponentsBuilder) throws IntegrityValidation {
+        var response = createService.createTopic(saveTopicData);
+        URI url = uriComponentsBuilder.path("/topics/{id}").buildAndExpand(response.Id()).toUri();
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping
@@ -92,7 +58,6 @@ public class TopicController {
         } else {
             throw new IntegrityValidation("Topic with this Id doesn't exist");
         }
-
     }
 
     @PutMapping("/{id}")
@@ -106,16 +71,15 @@ public class TopicController {
         } else {
             throw new IntegrityValidation("Topic with this Id doesn't exist");
         }
-
     }
 
     @DeleteMapping("/{id}")
     @Transactional
-    public ResponseEntity deleteTopicData(@PathVariable Long id) {
+    public ResponseEntity<String> deleteTopicData(@PathVariable Long id) {
         if (topicRepository.existsById(id)) {
             System.out.println("deleting");
             topicRepository.deleteTopic(id);
-            return ResponseEntity.ok().build();
+            return ResponseEntity.ok("Deleted topic sucessfully");
         } else {
             throw new IntegrityValidation("Topic with this Id doesn't exist");
         }
