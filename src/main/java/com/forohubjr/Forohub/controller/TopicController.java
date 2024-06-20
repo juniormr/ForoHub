@@ -2,6 +2,8 @@ package com.forohubjr.Forohub.controller;
 
 import com.forohubjr.Forohub.domain.topic.*;
 import com.forohubjr.Forohub.infra.errors.IntegrityValidation;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,6 +23,7 @@ import static org.springframework.data.web.config.EnableSpringDataWebSupport.Pag
 
 @RestController
 @RequestMapping("/topics")
+@SecurityRequirement(name = "bearer-key")
 public class TopicController {
     @Autowired
     private TopicRepository topicRepository;
