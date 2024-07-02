@@ -12,9 +12,9 @@ REST API desarrollada en Java para emular un foro teniendo endpoints para hacer 
 - Swagger 
   
 ## Requisitos
-- Java 17 o superior.
+- Java 17 o superior
 - Spring Boot 3.2.5
-- MySQL.
+- MySQL
 - Maven
 
 ## Endpoints
@@ -36,7 +36,7 @@ git clone https://github.com/juniormr/ForoHub.git
 cd ForoHub
 ```
 
-3. Descargar las dependencias del archivo pom.xml con Maven.
+3. Descargar las dependencias del archivo pom.xml con Maven
 4. Configurar la base de datos MySQL y actulizar las credenciales del archivo `application.properties`
 5. Ejecutar la aplicación
 
